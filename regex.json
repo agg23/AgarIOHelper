@@ -1,0 +1,21 @@
+{
+	"variables": [
+		{"name": "window", "type": "exec", "regex": "\\(function\\((.),.\\)\\{"},
+		{"name": "jQuery", "type": "exec", "regex": "\\(function\\(.,(.)\\)\\{"},
+
+		{"name": "objectArrayName", "type": "capture", "regex": "(.)\\[.\\]==this"},
+		{"name": "playerArrayName", "type": "capture", "regex": "(.)\\[.\\]\\.updatePos\\(\\)"},
+		{"name": "playerIDArrayName", "type": "capture", "regex": "(.)\\.indexOf\\(this\\.id\\)"},
+		{"name": "xName", "type": "capture", "regex": "(.)=.\\.clientX;"},
+		{"name": "yName", "type": "capture", "regex": "(.)=.\\.clientY;"}
+	],
+
+	"replace": [
+		{"replace": "", "regex": "(\\(function\\(.,.\\)\\{)", "comment": "Remove beginning of main.js"},
+		{"replace": "", "regex": "\\}\\)\\(window,jQuery\\);", "comment": "Remove end of main.js"},
+		{"replace": "dollar", "regex": "(\\$)", "modifier": "g", "comment": "Replace all dollar signs (as to not mess with jQuery)"},
+		{"replace": "&&this.size>=20", "regex": "\\&\\&\\(.\\|\\|0\\=\\=.\\.length\\&\\&\\(!this.isVirus\\|\\|this.isAgitated\\)\\&\\&20<this.size\\)", 
+		"comment": "Enable the viewing of the sizes of all masses"},
+		{"replace": "", "regex": "(,.\\.color=.)", "comment": "Enable the rendering of custom colors"}
+	]
+}

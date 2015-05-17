@@ -9,10 +9,10 @@
 	"permissions": ["tabs", "webRequest", "webRequestBlocking", "*://*.agar.io/*"],
 	"browser_action": {
         "default_title": "Apply"
-        //"default_popup": "popup.html"
     },
     "web_accessible_resources": [
     	"bot.js",
-    	"css.css"
+    	"css.css",
+        "regex.json"
     ]
 }

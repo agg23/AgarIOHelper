@@ -1,22 +1,17 @@
 var mainjs;
 var botjs;
 
-var xName;
-var yName;
-
-var objectArrayName;
-var playerArrayName;
-var playerIDArrayName;
+var scriptAdditions = "";
 
 var botURL = chrome.extension.getURL("bot.js");
 var cssURL = chrome.extension.getURL("css.css");
+var jsonURL = chrome.extension.getURL("regex.json");
 
 chrome.browserAction.onClicked.addListener( function() {
 	if(mainjs == null || mainjs == "") {
 		console.log("No script to load");
 		return;
 	}
-	//chrome.tabs.executeScript({file: "jquery.min.js"});
 	chrome.tabs.executeScript(null, {code: "var script = document.createElement('script');\
 	var code = document.createTextNode(\""+ escapeCode(mainjs) +"\");\
 	script.appendChild(code);\
@@ -67,55 +62,57 @@ function updateFilters(urls) {
 
 /* -- Modifying Main Script */
 
+function getRegexJson(script) {
+	console.log(jsonURL);
+	$.getJSON(jsonURL, function(data) {
+		parseRegexJson(data, script);
+	});
+}
+
+function parseRegexJson(json, script) {
+	var mainAdditions = "";
+
+	var variables = json["variables"];
+	var replaces = json["replace"];
+	
+	if(variables) {
+		for(var iCount = 0; iCount < variables.length; iCount++) {
+			var variable = variables[iCount];
+			var name = variable["name"];
+			var regexText = variable["regex"];
+			var regex = new RegExp(regexText);
+			var type = variable["type"];
+
+			if(type == "exec") {
+				mainAdditions += "var " + regex.exec(script)[1] + " = " + name + ";\n";
+			} else if(type == "capture") {
+				scriptAdditions += "var " + name + " = \"" + regex.exec(script)[1] + "\";\n";
+			}
+		}
+	}
+
+	if(replaces) {
+		for(var iCount = 0; iCount < replaces.length; iCount++) {
+			var item = replaces[iCount];
+
+			var replace = item["replace"];
+			var regexText = item["regex"];
+			var modifier = item["modifier"];
+
+			var regex = new RegExp(regexText, modifier);
+
+			script = script.replace(regex, replace);
+		}
+	}
+
+	script = mainAdditions + script + "window.onload();";
+	mainjs = script;
+
+	console.log(scriptAdditions);
+}
+
 function modifyScript(script) {
-	//mainjs.replace(/\(function\(h, r\) \{/, "");
-
-	var regExtractWindow = /\(function\((.),.\)\{/;
-	var regExtractJquery = /\(function\(.,(.)\)\{/;
-
-	var windowName = regExtractWindow.exec(script)[1];
-	var jqueryName = regExtractJquery.exec(script)[1];
-
-	var regExtractObjectArray = /(.)\[.\]==this/;
-	var regExtractPlayerArray = /(.)\[.\]\.updatePos\(\)/;
-	var regExtractPlayerIDArray = /(.)\.indexOf\(this\.id\)/;
-
-	objectArrayName = regExtractObjectArray.exec(script)[1];
-	playerArrayName = regExtractPlayerArray.exec(script)[1];
-	playerIDArrayName = regExtractPlayerIDArray.exec(script)[1];
-
-	console.log("ObjectArray: " + objectArrayName);
-	console.log("PlayerArray: " + playerArrayName);
-	console.log("PlayerIDArray: " + playerIDArrayName);
-
-	var regRemoveFunction = /(\(function\(.,.\)\{)/;
-	var regRemoveFunctionEnd = /\}\)\(window,jQuery\);/;
-	var regDollar = /(\$)/g;
-
-	script = script.replace(regRemoveFunction, "");
-	script = script.replace(regRemoveFunctionEnd, "");
-	script = script.replace(regDollar, "dollar");
-
-	var regExtractShowMass = /setShowMass\=function\(a\)\{(.{1,3})\=.\}/;
-	var showMassName = regExtractShowMass.exec(script)[1];
-
-	var regShowMassModifier = /\&\&\(.\|\|0\=\=.\.length\&\&\(!this.isVirus\|\|this.isAgitated\)\&\&20<this.size\)/;
-
-	/*var regZoomReplace = /k\=\(9\*k\+a\)\/10/;
-
-	script = script.replace(regZoomReplace, "k = (9 * k + a) / 11");*/
-
-	script = script.replace(regShowMassModifier, "&&this.size>=20");
-
-	var regColorReplace = /(.\.color=.)/;
-	script = script.replace(regColorReplace, "n");
-
-	xName = getVariable("clientX", "onmousemove");
-	yName = getVariable("clientY", "onmousemove");
-
-	var custom = "var " + windowName + " = window; var " + jqueryName + " = jQuery;";
-
-	mainjs = custom + script + "window.onload();";
+	getRegexJson(script);
 
 	getBotScript();
 }
@@ -159,60 +156,6 @@ function getBotScript() {
 }
 
 function modifyBotScript(script) {
-	var custom = "var xName = \"" + xName + "\";\
-	var yName = \"" + yName + "\";\
-	var objectArrayName = \"" + objectArrayName + "\";\
-	var playerArrayName = \"" + playerArrayName + "\";\
-	var playerIDArrayName = \"" + playerIDArrayName + "\";\
-	";
-
-	botjs = custom + script;
-}
-
-/* -- Variable Detection -- */
-
-function getVariable(str, context) {
-	var offset = 0;
-	if(context != "") {
-		offset = mainjs.indexOf(context);
-	}
-
-	if(offset == -1) {
-		offset = 0;
-	}
-
-	var index = mainjs.indexOf(str, offset);
-
-	if(index == -1) {
-		console.log("No variable found");
-		return "";
-	}
-
-	var equalsIndex;
-
-	var character;
-
-	for(var i = -1; i > -19; i--) {
-		if(mainjs.charAt(index + i) == "=") {
-			equalsIndex = index + i;
-			if(mainjs.charAt(index + i - 1) == " ") {
-				character = mainjs.charAt(index + i - 2);
-			} else {
-				character = mainjs.charAt(index + i - 1);
-			}
-			break;
-		}
-	}
-	console.log("Variable name: " + character);
-	return character;
-}
-
-function replaceAll(find, replace, str) {
-	return str.replace(new RegExp(find, 'g'), replace);
-}
-
-/* -- Bot Operations -- */
-
-function update() {
-	console.log(window[xName]);
+	botjs = scriptAdditions + script;
+	console.log(botjs);
 }
