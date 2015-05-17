@@ -1,0 +1,11 @@
+#botoverlay {
+	position: fixed;
+	top: 20px;
+	left: 20px;
+	width: 100px;
+	height: 400px;
+	background:rgba(0,0,0,0.5);
+	color: white;
+	font-size: 24px;
+	z-index: 10000000;
+}
